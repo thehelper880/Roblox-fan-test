@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roblox Central</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background-color: #0f0f0f;
+      color: #f1f1f1;
+      line-height: 1.6;
+    }
+
+    header {
+      background: #c500ff;
+      color: white;
+      padding: 1rem 0;
+      text-align: center;
+    }
+
+    nav {
+      background: #222;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      padding: 0.75rem;
+    }
+
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    main {
+      padding: 1rem;
+    }
+
+    .gallery img {
+      width: 100%;
+      max-width: 300px;
+      margin: 1rem auto;
+      display: block;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #000;
+    }
+
+    footer {
+      background: #111;
+      color: #ccc;
+      text-align: center;
+      padding: 1rem;
+      margin-top: 2rem;
+    }
+
+    .hidden-backdoor {
+      display: none;
+    }
+
+    @media (min-width: 600px) {
+      .gallery {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .gallery img {
+        margin: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Roblox Central</h1>
+    <p>Your #1 Hub for Roblox Tips & Game Help</p>
+  </header>
+
+  <nav>
+    <a href="#home">Home</a>
+    <a href="#about">About</a>
+    <a href="#contact">Contact</a>
+    <a href="#gallery">Gallery</a>
+  </nav>
+
+  <main>
+    <section id="home">
+      <h2>Welcome</h2>
+      <p>We offer guides, tips, and hints for your favorite Roblox games. Whether you’re stuck in a tycoon or want to dominate in PVP, we got you.</p>
+    </section>
+
+    <section id="about">
+      <h2>About This Site</h2>
+      <p>This fan site is made by Roblox lovers for Roblox players. We cover trending games, updates, and secret tips you won’t find in-game.</p>
+    </section>
+
+    <section id="contact">
+      <h2>Contact Us</h2>
+      <form>
+        <label for="name">Name:</label><br />
+        <input type="text" id="name" name="name" /><br /><br />
+        <label for="email">Email:</label><br />
+        <input type="email" id="email" name="email" /><br /><br />
+        <label for="message">Message:</label><br />
+        <textarea id="message" name="message" rows="4"></textarea><br /><br />
+        <button type="submit">Send</button>
+      </form>
+    </section>
+
+    <section id="gallery">
+      <h2>Photo Gallery</h2>
+      <div class="gallery">
+        <img src="https://placehold.co/300x200?text=Screenshot+1" alt="Screenshot 1" />
+        <img src="https://placehold.co/300x200?text=Screenshot+2" alt="Screenshot 2" />
+        <img src="https://placehold.co/300x200?text=Screenshot+3" alt="Screenshot 3" />
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Roblox Central - All Rights Reserved</p>
+  </footer>
+
+  <!-- Hidden Admin Backdoor -->
+  <div class="hidden-backdoor">
+    <script>
+      document.addEventListener("keydown", function (e) {
+        if (e.ctrlKey && e.altKey && e.key === "R") {
+          alert("Welcome back, admin! Access granted.");
+          // Future code for admin panel access
+        }
+      });
+    </script>
+  </div>
+</body>
+</html>
