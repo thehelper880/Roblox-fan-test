@@ -1,305 +1,146 @@
-// --- Data and constants ---
-const SEEDS = [
-  {name:"Carrot", rarity:"common", basePrice:5, icon:"🥕"},
-  {name:"Apple", rarity:"common", basePrice:10, icon:"🍎"},
-  {name:"Banana", rarity:"common", basePrice:12, icon:"🍌"},
-  {name:"Blueberry", rarity:"rare", basePrice:25, icon:"🫐"},
-  {name:"Strawberry", rarity:"rare", basePrice:30, icon:"🍓"},
-  {name:"Pineapple", rarity:"rare", basePrice:35, icon:"🍍"},
-  {name:"Dragonfruit", rarity:"epic", basePrice:75, icon:"🐉"},
-  {name:"Mango", rarity:"epic", basePrice:70, icon:"🥭"},
-  {name:"Kiwi", rarity:"epic", basePrice:80, icon:"🥝"},
-  {name:"Golden Apple", rarity:"legendary", basePrice:200, icon:"🍏"},
-  {name:"Chocolate Berry", rarity:"legendary", basePrice:250, icon:"🍫"},
+// Replace these config values with yours!
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "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",
+  authDomain: "YOUR_AUTH_DOMAIN_HERE",
+  projectId: "YOUR_PROJECT_ID_HERE",
+  storageBucket: "YOUR_STORAGE_BUCKET_HERE",
+  messagingSenderId: "YOUR_MSG_SENDER_ID",
+  appId: "YOUR_APP_ID_HERE",
+  measurementId: "YOUR_MEASUREMENT_ID"
+};
+
+export const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+import { auth, db } from './firebase-config.js';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
+import { doc, setDoc, getDoc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+
+const loginScreen = document.getElementById('login-screen');
+const gameScreen = document.getElementById('game-screen');
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
+const loginBtn = document.getElementById('login-btn');
+const registerBtn = document.getElementById('register-btn');
+const loginMessage = document.getElementById('login-message');
+
+const seedStockDiv = document.getElementById('seed-stock');
+const playerMoneyDiv = document.getElementById('player-money');
+const weatherDisplay = document.getElementById('weather-display');
+const adminBackdoorBtn = document.getElementById('admin-backdoor-btn');
+
+let currentUser = null;
+let playerMoney = 100; // start with money for 5 carrots @ 20 each
+let seeds = [];
+let seedStock = [];
+let weather = 'Sunny';
+let weatherMultiplier = 1;
+
+const fruits = [
+  { name: 'Carrot', rarity: 'Common', price: 20, growTime: 2*60*1000 },
+  { name: 'Strawberry', rarity: 'Uncommon', price: 100, growTime: 5*60*1000 },
+  { name: 'Blueberry', rarity: 'Rare', price: 250, growTime: 7*60*1000 },
+  { name: 'Golden Apple', rarity: 'Legendary', price: 1000, growTime: 12*60*1000 }
 ];
 
-const RARITY_WEIGHTS = {
-  "common": 50,
-  "rare": 30,
-  "epic": 15,
-  "legendary": 5,
-};
-
-const STOCK_SIZE = 5;
-const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
-const PRICE_VARIANCE = 0.10; // ±10% random price change
-const PLANT_GROW_TIME = 5 * 60 * 1000; // 5 minutes grow time
-const TSUNAMI_INTERVAL = 30 * 60 * 1000; // 30 minutes
-const TSUNAMI_DURATION = 5 * 60 * 1000; // 5 minutes
-
-// --- Variables ---
-let balance = 0;
-let inventory = {};
-let prices = {};
-let currentStock = [];
-let currentWeather = {
-  name: "Clear",
-  effectMultiplier: 1,
-  description: "No special weather."
-};
-let tsunamiActive = false;
-let tsunamiType = null;
-let tsunamiTimeout = null;
-
-let plantedSeed = null;
-let plantTime = null;
-
-// --- DOM elements ---
-const balanceEl = document.getElementById("balance");
-const stockListEl = document.getElementById("stock");
-const inventoryListEl = document.getElementById("inventory");
-const buyBtn = document.getElementById("buy-btn");
-const eventsEl = document.getElementById("events");
-const plotStatusEl = document.getElementById("plot-status");
-const plantBtn = document.getElementById("plant-btn");
-const weatherStatusEl = document.getElementById("weather-status");
-
-// --- Functions ---
-
-function addEventLog(text, type="neutral") {
-  const p = document.createElement("p");
-  p.textContent = text;
-  if(type === "positive") p.style.color = "green";
-  else if(type === "negative") p.style.color = "red";
-  else p.style.color = "#004400";
-  eventsEl.prepend(p);
-  // Limit log to last 50 entries
-  if(eventsEl.children.length > 50) {
-    eventsEl.removeChild(eventsEl.lastChild);
-  }
+function updateUI() {
+  playerMoneyDiv.textContent = `Money: $${playerMoney}`;
+  seedStockDiv.textContent = 'Seed Stock: ' + seedStock.map(s => `${s.name} ($${s.price})`).join(', ');
+  weatherDisplay.textContent = `Weather: ${weather} x${weatherMultiplier}`;
 }
 
-function weightedRandomSeed() {
-  const totalWeight = Object.values(RARITY_WEIGHTS).reduce((a,b) => a+b, 0);
-  let rand = Math.random() * totalWeight;
-  let chosenRarity = null;
-  for(let rarity in RARITY_WEIGHTS) {
-    rand -= RARITY_WEIGHTS[rarity];
-    if(rand <= 0) {
-      chosenRarity = rarity;
-      break;
+function rotateSeedStock() {
+  // Always keep carrot in stock, replace others randomly
+  seedStock = [{ ...fruits[0] }]; // carrot
+  let others = fruits.slice(1);
+  // Randomly pick 2 others every 5 minutes
+  let chosen = [];
+  while (chosen.length < 2) {
+    let pick = others[Math.floor(Math.random()*others.length)];
+    if (!chosen.includes(pick)) chosen.push(pick);
+  }
+  seedStock = seedStock.concat(chosen);
+  updateUI();
+}
+
+function changeWeather() {
+  const weatherTypes = ['Sunny', 'Rainy', 'Chocolate Tsunami', 'Golden Tsunami'];
+  const chosen = weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
+  weather = chosen;
+
+  switch (chosen) {
+    case 'Sunny': weatherMultiplier = 1; break;
+    case 'Rainy': weatherMultiplier = 1.5; break;
+    case 'Chocolate Tsunami': weatherMultiplier = 5; break;
+    case 'Golden Tsunami': weatherMultiplier = 25; break;
+  }
+  updateUI();
+}
+
+setInterval(rotateSeedStock, 5*60*1000); // 5 mins
+setInterval(changeWeather, 30*60*1000); // 30 mins
+rotateSeedStock();
+changeWeather();
+
+// Authentication handlers
+loginBtn.addEventListener('click', () => {
+  signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
+  .then(userCredential => {
+    currentUser = userCredential.user;
+    loginMessage.textContent = 'Logged in!';
+    loginScreen.style.display = 'none';
+    gameScreen.style.display = 'block';
+    startGame();
+  })
+  .catch(err => loginMessage.textContent = err.message);
+});
+
+registerBtn.addEventListener('click', () => {
+  createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
+  .then(userCredential => {
+    currentUser = userCredential.user;
+    loginMessage.textContent = 'Registered!';
+    loginScreen.style.display = 'none';
+    gameScreen.style.display = 'block';
+    startGame();
+  })
+  .catch(err => loginMessage.textContent = err.message);
+});
+
+// Basic game start placeholder
+function startGame() {
+  updateUI();
+  // TODO: Initialize 3D canvas, player movement, planting, weather effects, etc.
+  // This is where you'd initialize three.js or Babylon.js and your garden plot visuals.
+}
+
+// Admin Backdoor: Ctrl + Shift + B + code 'green-tornado-973' prompt to show controls
+window.addEventListener('keydown', async (e) => {
+  if (e.ctrlKey && e.shiftKey && e.code === 'KeyB') {
+    const code = prompt('Enter admin code:');
+    if (code === 'green-tornado-973') {
+      alert('Admin controls enabled');
+      adminBackdoorBtn.style.display = 'inline-block';
     }
   }
-  const filtered = SEEDS.filter(s => s.rarity === chosenRarity);
-  return filtered[Math.floor(Math.random() * filtered.length)];
-}
-
-function generateStock() {
-  let stockSet = new Set();
-  // Always add Carrot
-  const carrotSeed = SEEDS.find(s => s.name === "Carrot");
-  stockSet.add(carrotSeed);
-  while(stockSet.size < STOCK_SIZE) {
-    stockSet.add(weightedRandomSeed());
-  }
-  return Array.from(stockSet);
-}
-
-function renderStock() {
-  stockListEl.innerHTML = "";
-  currentStock.forEach(seed => {
-    const li = document.createElement("li");
-    li.textContent = `${seed.icon} ${seed.name} ($${prices[seed.name].toFixed(2)})`;
-    li.dataset.seedName = seed.name;
-    li.style.fontWeight = "bold";
-    li.style.userSelect = "none";
-    if (li.dataset.seedName === selectedSeedName) li.classList.add("selected");
-
-    li.onclick = () => {
-      selectedSeedName = seed.name;
-      Array.from(stockListEl.children).forEach(c => c.classList.remove("selected"));
-      li.classList.add("selected");
-    };
-    stockListEl.appendChild(li);
-  });
-}
-
-function renderInventory() {
-  inventoryListEl.innerHTML = "";
-  for(let seedName in inventory) {
-    const seed = SEEDS.find(s => s.name === seedName);
-    const li = document.createElement("li");
-    li.textContent = `${seed.icon} ${seedName}: ${inventory[seedName]}`;
-    inventoryListEl.appendChild(li);
-  }
-  if(Object.keys(inventory).length === 0) {
-    inventoryListEl.textContent = "No seeds or fruits in inventory.";
-  }
-}
-
-function updateBalance() {
-  balanceEl.textContent = `Balance: $${balance.toFixed(2)}`;
-}
-
-function updatePrices() {
-  currentStock.forEach(seed => {
-    const base = SEEDS.find(s => s.name === seed.name).basePrice;
-    // Random fluctuation ±10%
-    let change = (Math.random() * 2 - 1) * PRICE_VARIANCE * base;
-    let newPrice = (prices[seed.name] || base) + change;
-
-    // Apply weather/tsunami multiplier
-    newPrice = Math.max(1, newPrice) * currentWeather.effectMultiplier;
-
-    prices[seed.name] = newPrice;
-  });
-  renderStock();
-}
-
-function applyWeather() {
-  const weatherTypes = [
-    {name:"Clear", multiplier:1, description:"No special weather."},
-    {name:"Sunny", multiplier:1.2, description:"Sunny weather! Prices increase 20%."},
-    {name:"Rainy", multiplier:0.8, description:"Rainy weather, prices decrease 20%."},
-    {name:"Windy", multiplier:1, description:"Windy weather, no effect."},
-    {name:"Storm", multiplier:0.7, description:"Storm lowers prices by 30%."},
-  ];
-  currentWeather = weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
-  weatherStatusEl.textContent = `Weather: ${currentWeather.name} - ${currentWeather.description}`;
-  addEventLog(`Weather update: ${currentWeather.name} - ${currentWeather.description}`, "neutral");
-}
-
-function tryTsunami() {
-  if(tsunamiActive) return;
-
-  const chance = Math.random();
-  if(chance < 0.1) { // 10% chance to happen every 30 mins
-    tsunamiActive = true;
-    tsunamiType = Math.random() < 0.15 ? "Golden" : "Chocolate"; // 15% golden, 85% chocolate
-    const mult = tsunamiType === "Golden" ? 25 : 5;
-    currentWeather.effectMultiplier = mult;
-    weatherStatusEl.textContent = `Weather: ${tsunamiType} Tsunami! Prices multiplied by ${mult} for 5 minutes!`;
-    addEventLog(`${tsunamiType} Tsunami has arrived! Prices multiplied by ${mult} for 5 minutes!`, "positive");
-
-    tsunamiTimeout = setTimeout(() => {
-      tsunamiActive = false;
-      currentWeather.effectMultiplier = 1;
-      applyWeather();
-      addEventLog(`${tsunamiType} Tsunami has ended. Prices back to normal.`, "neutral");
-      tsunamiType = null;
-    }, TSUNAMI_DURATION);
-  }
-}
-
-function updatePlotStatus() {
-  if(!plantedSeed) {
-    plotStatusEl.textContent = "Empty plot";
-    plotStatusEl.style.cursor = "default";
-    plantBtn.disabled = false;
-    return;
-  }
-  const elapsed = Date.now() - plantTime;
-  if(elapsed >= PLANT_GROW_TIME) {
-    plotStatusEl.textContent = `Your ${plantedSeed} is ready to harvest! Click here to harvest.`;
-    plotStatusEl.style.cursor = "pointer";
-    plantBtn.disabled = true;
-  } else {
-    const mins = Math.floor((PLANT_GROW_TIME - elapsed) / 60000);
-    const secs = Math.floor(((PLANT_GROW_TIME - elapsed) % 60000) / 1000);
-    plotStatusEl.textContent = `Growing ${plantedSeed}... Time left: ${mins}:${secs.toString().padStart(2,"0")}`;
-    plotStatusEl.style.cursor = "default";
-    plantBtn.disabled = false;
-  }
-}
-
-// --- Interaction handlers ---
-
-let selectedSeedName = null;
-
-buyBtn.addEventListener("click", () => {
-  if(!selectedSeedName) return alert("Please select a seed to buy.");
-  const seed = SEEDS.find(s => s.name === selectedSeedName);
-  if(!seed) return;
-
-  const price = prices[selectedSeedName];
-  if(balance < price) {
-    alert("You don't have enough money to buy this seed.");
-    return;
-  }
-  balance -= price;
-  inventory[selectedSeedName] = (inventory[selectedSeedName] || 0) + 1;
-  updateBalance();
-  renderInventory();
-  addEventLog(`Bought 1 ${selectedSeedName} for $${price.toFixed(2)}`, "positive");
 });
 
-plantBtn.addEventListener("click", () => {
-  if(plantedSeed) {
-    alert("Your plot is currently occupied.");
-    return;
+// Admin button click handler (example: toggle weather)
+adminBackdoorBtn.addEventListener('click', () => {
+  const weatherTypes = ['Sunny', 'Rainy', 'Chocolate Tsunami', 'Golden Tsunami'];
+  let nextIndex = (weatherTypes.indexOf(weather) + 1) % weatherTypes.length;
+  weather = weatherTypes[nextIndex];
+
+  switch (weather) {
+    case 'Sunny': weatherMultiplier = 1; break;
+    case 'Rainy': weatherMultiplier = 1.5; break;
+    case 'Chocolate Tsunami': weatherMultiplier = 5; break;
+    case 'Golden Tsunami': weatherMultiplier = 25; break;
   }
-  if(!selectedSeedName) {
-    alert("Select a seed to plant by clicking its name in inventory.");
-    return;
-  }
-  if(!inventory[selectedSeedName] || inventory[selectedSeedName] < 1) {
-    alert("You need at least 1 seed in your inventory to plant.");
-    return;
-  }
-  // Plant seed
-  inventory[selectedSeedName]--;
-  if(inventory[selectedSeedName] === 0) delete inventory[selectedSeedName];
-  plantedSeed = selectedSeedName;
-  plantTime = Date.now();
-  updatePlotStatus();
-  renderInventory();
-  addEventLog(`Planted a ${plantedSeed} seed in your garden plot.`, "neutral");
+  updateUI();
 });
 
-plotStatusEl.addEventListener("click", () => {
-  if(!plantedSeed) return;
-  const elapsed = Date.now() - plantTime;
-  if(elapsed < PLANT_GROW_TIME) return;
-  // Harvest
-  inventory[plantedSeed] = (inventory[plantedSeed] || 0) + 1;
-  addEventLog(`Harvested 1 ${plantedSeed}!`, "positive");
-  plantedSeed = null;
-  plantTime = null;
-  updatePlotStatus();
-  renderInventory();
-});
-
-// --- Initialization ---
-
-function init() {
-  // Set initial prices to base prices
-  SEEDS.forEach(s => prices[s.name] = s.basePrice);
-  // Generate stock initially
-  currentStock = generateStock();
-  renderStock();
-  // Start with money to buy 5 carrots
-  const carrotPrice = SEEDS.find(s => s.name === "Carrot").basePrice;
-  balance = carrotPrice * 5;
-  updateBalance();
-  renderInventory();
-  updatePlotStatus();
-  applyWeather();
-
-  // Refresh stock and prices every 5 minutes
-  setInterval(() => {
-    currentStock = generateStock();
-    updatePrices();
-  }, REFRESH_INTERVAL);
-
-  // Update prices every minute (with weather effect)
-  setInterval(() => {
-    updatePrices();
-  }, 60 * 1000);
-
-  // Update plot status every second
-  setInterval(() => {
-    updatePlotStatus();
-  }, 1000);
-
-  // Weather update every 5 minutes (sync with stock refresh)
-  setInterval(() => {
-    if(!tsunamiActive) applyWeather();
-  }, REFRESH_INTERVAL);
-
-  // Tsunami check every 30 minutes
-  setInterval(() => {
-    tryTsunami();
-  }, TSUNAMI_INTERVAL);
-}
-
-init();
