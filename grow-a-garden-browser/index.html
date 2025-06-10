@@ -3,44 +3,30 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Grow-a-Garden Stock Game</title>
-<style>
-  body { font-family: Arial, sans-serif; background: #e0ffe0; color: #004400; margin: 0; padding: 20px; }
-  h1, h2 { margin-bottom: 0.3em; }
-  #balance { font-size: 1.2em; margin-bottom: 1em; }
-  #stock, #inventory { margin-bottom: 1em; }
-  ul { list-style: none; padding: 0; }
-  li { margin: 5px 0; cursor: pointer; }
-  li.selected { background: #99ff99; }
-  button { padding: 0.3em 0.8em; margin-top: 0.5em; cursor: pointer; }
-  #events { background: #ddffdd; padding: 10px; border: 1px solid #88cc88; height: 100px; overflow-y: auto; font-size: 0.9em; margin-bottom: 1em; }
-  #plot-container { background: #ccffcc; padding: 10px; border: 2px solid #77aa77; margin-bottom: 1em; }
-  #plot-status { margin: 10px 0; font-weight: bold; cursor: default; }
-  #weather-status { margin-bottom: 1em; font-style: italic; }
-</style>
+<title>Grow a Garden 3D</title>
+<link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
-<h1>Grow-a-Garden Stock Game</h1>
-<div id="balance">Balance: $0</div>
-<div id="weather-status">Weather: Clear - No special weather.</div>
-
-<h2>Seed Stock (Click to select seed to buy)</h2>
-<ul id="stock"></ul>
-<button id="buy-btn">Buy Selected Seed</button>
-
-<h2>Your Inventory</h2>
-<ul id="inventory"></ul>
-
-<div id="plot-container">
-  <h2>Your Garden Plot</h2>
-  <div id="plot-status">Empty plot</div>
-  <button id="plant-btn">Plant Selected Seed</button>
+<div id="login-screen">
+  <h2>Login or Register</h2>
+  <input id="email" type="email" placeholder="Email" />
+  <input id="password" type="password" placeholder="Password" />
+  <button id="login-btn">Login</button>
+  <button id="register-btn">Register</button>
+  <div id="login-message"></div>
 </div>
 
-<h2>Events Log</h2>
-<div id="events"></div>
+<div id="game-screen" style="display:none;">
+  <canvas id="gameCanvas"></canvas>
+  <div id="ui">
+    <div id="seed-stock"></div>
+    <div id="player-money"></div>
+    <div id="weather-display"></div>
+    <button id="admin-backdoor-btn" style="display:none;">Admin Panel</button>
+  </div>
+</div>
 
-<script src="script.js"></script>
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
